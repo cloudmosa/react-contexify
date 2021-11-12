@@ -78,6 +78,11 @@ export interface MenuProps
    * auto-hide on scroll event. Default is true.
    */
   hideOnScroll?: boolean;
+
+  /**
+   * auto-hide on click event. Defautl is true.
+   */
+  hideOnClick?: boolean;
 }
 
 interface MenuState {
@@ -108,6 +113,7 @@ export const Menu: React.FC<MenuProps> = ({
   onHidden = NOOP,
   onShown = NOOP,
   hideOnScroll = true,
+  hideOnClick = true,
   ...rest
 }) => {
   const [state, setState] = useReducer(reducer, {
@@ -211,7 +217,7 @@ export const Menu: React.FC<MenuProps> = ({
     if (state.visible) {
       window.addEventListener('resize', hide);
       window.addEventListener('contextmenu', hide);
-      window.addEventListener('click', hide);
+      hideOnClick && window.addEventListener('click', hide);
       hideOnScroll && window.addEventListener('scroll', hide);
       window.addEventListener('keydown', handleKeyboard);
 
@@ -224,7 +230,7 @@ export const Menu: React.FC<MenuProps> = ({
     return () => {
       window.removeEventListener('resize', hide);
       window.removeEventListener('contextmenu', hide);
-      window.removeEventListener('click', hide);
+      hideOnClick && window.removeEventListener('click', hide);
       hideOnScroll && window.removeEventListener('scroll', hide);
       window.removeEventListener('keydown', handleKeyboard);
 
