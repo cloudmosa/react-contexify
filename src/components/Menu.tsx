@@ -73,6 +73,11 @@ export interface MenuProps
    * Invoked after the menu has been hidden.
    */
   onHidden?: () => void;
+
+  /**
+   * auto-hide on scroll event. Default is true.
+   */
+  hideOnScroll?: boolean;
 }
 
 interface MenuState {
@@ -102,6 +107,7 @@ export const Menu: React.FC<MenuProps> = ({
   animation = 'scale',
   onHidden = NOOP,
   onShown = NOOP,
+  hideOnScroll = true,
   ...rest
 }) => {
   const [state, setState] = useReducer(reducer, {
@@ -206,7 +212,7 @@ export const Menu: React.FC<MenuProps> = ({
       window.addEventListener('resize', hide);
       window.addEventListener('contextmenu', hide);
       window.addEventListener('click', hide);
-      window.addEventListener('scroll', hide);
+      hideOnScroll && window.addEventListener('scroll', hide);
       window.addEventListener('keydown', handleKeyboard);
 
       // This let us debug the menu in the console in dev mode
@@ -219,7 +225,7 @@ export const Menu: React.FC<MenuProps> = ({
       window.removeEventListener('resize', hide);
       window.removeEventListener('contextmenu', hide);
       window.removeEventListener('click', hide);
-      window.removeEventListener('scroll', hide);
+      hideOnScroll && window.removeEventListener('scroll', hide);
       window.removeEventListener('keydown', handleKeyboard);
 
       if (process.env.NODE_ENV !== 'development') {
