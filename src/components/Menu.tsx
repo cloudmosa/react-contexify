@@ -75,14 +75,9 @@ export interface MenuProps
   onHidden?: () => void;
 
   /**
-   * auto-hide on scroll event. Default is true.
+   * Adjust UI for touch screen devices.
    */
-  hideOnScroll?: boolean;
-
-  /**
-   * auto-hide on click event. Defautl is true.
-   */
-  hideOnClick?: boolean;
+  touchMode?: boolean;
 }
 
 interface MenuState {
@@ -112,8 +107,7 @@ export const Menu: React.FC<MenuProps> = ({
   animation = 'scale',
   onHidden = NOOP,
   onShown = NOOP,
-  hideOnScroll = true,
-  hideOnClick = true,
+  touchMode = false,
   ...rest
 }) => {
   const [state, setState] = useReducer(reducer, {
@@ -174,8 +168,19 @@ export const Menu: React.FC<MenuProps> = ({
         x -= x + menuWidth - windowWidth;
       }
 
-      if (y + menuHeight > windowHeight) {
-        y -= y + menuHeight - windowHeight;
+      if (touchMode) {
+        // NOTE: For touch-mode, adjust y position to avoid finger touched area covered by context menu.
+        //   Flip context menu display direction if it exceeds screen boundary.
+        const padding = 30;
+        if (y + menuHeight + padding <= windowHeight)
+          y += padding;
+        else
+          y -= padding + menuHeight;
+      } else {
+        // For desktop-mode, do not let context menu exceeds screen boundary.
+        if (y + menuHeight > windowHeight) {
+          y -= y + menuHeight - windowHeight;
+        }
       }
 
       setState({
@@ -217,10 +222,11 @@ export const Menu: React.FC<MenuProps> = ({
     if (state.visible) {
       window.addEventListener('resize', hide);
       window.addEventListener('contextmenu', hide);
-      hideOnClick && window.addEventListener('click', hide);
-      hideOnScroll && window.addEventListener('scroll', hide);
-      window.addEventListener('keydown', handleKeyboard);
-
+      if (!touchMode) {
+        window.addEventListener('click', hide);
+        window.addEventListener('scroll', hide);
+        window.addEventListener('keydown', handleKeyboard);
+      }
       // This let us debug the menu in the console in dev mode
       if (process.env.NODE_ENV !== 'development') {
         window.addEventListener('blur', hide);
@@ -230,10 +236,11 @@ export const Menu: React.FC<MenuProps> = ({
     return () => {
       window.removeEventListener('resize', hide);
       window.removeEventListener('contextmenu', hide);
-      hideOnClick && window.removeEventListener('click', hide);
-      hideOnScroll && window.removeEventListener('scroll', hide);
-      window.removeEventListener('keydown', handleKeyboard);
-
+      if (!touchMode) {
+        window.removeEventListener('click', hide);
+        window.removeEventListener('scroll', hide);
+        window.removeEventListener('keydown', handleKeyboard);
+      }
       if (process.env.NODE_ENV !== 'development') {
         window.removeEventListener('blur', hide);
       }
