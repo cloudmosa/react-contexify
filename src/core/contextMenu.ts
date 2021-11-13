@@ -8,6 +8,7 @@ export interface ShowContextMenuParams {
   id: MenuId;
   event: TriggerEvent;
   props?: any;
+  options?: any;
   position?: {
     x: number;
     y: number;

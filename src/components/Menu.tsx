@@ -73,11 +73,6 @@ export interface MenuProps
    * Invoked after the menu has been hidden.
    */
   onHidden?: () => void;
-
-  /**
-   * Adjust UI for touch screen devices.
-   */
-  touchMode?: boolean;
 }
 
 interface MenuState {
@@ -86,6 +81,7 @@ interface MenuState {
   visible: boolean;
   triggerEvent: TriggerEvent;
   propsFromTrigger: any;
+  showOptions: any;
   willLeave: boolean;
 }
 
@@ -107,7 +103,6 @@ export const Menu: React.FC<MenuProps> = ({
   animation = 'scale',
   onHidden = NOOP,
   onShown = NOOP,
-  touchMode = false,
   ...rest
 }) => {
   const [state, setState] = useReducer(reducer, {
@@ -116,6 +111,7 @@ export const Menu: React.FC<MenuProps> = ({
     visible: false,
     triggerEvent: {} as TriggerEvent,
     propsFromTrigger: null,
+    showOptions: null,
     willLeave: false,
   });
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -168,14 +164,15 @@ export const Menu: React.FC<MenuProps> = ({
         x -= x + menuWidth - windowWidth;
       }
 
-      if (touchMode) {
-        // NOTE: For touch-mode, adjust y position to avoid finger touched area covered by context menu.
+      if (state.showOptions && state.showOptions.adjustPositionForTouch) {
+        // NOTE: For touch screen, adjust y position to avoid finger touched area covered by context menu.
         //   Flip context menu display direction if it exceeds screen boundary.
         const padding = 30;
-        if (y + menuHeight + padding <= windowHeight)
+        if (y + menuHeight + padding <= windowHeight) {
           y += padding;
-        else
+        } else {
           y -= padding + menuHeight;
+        }
       } else {
         // For desktop-mode, do not let context menu exceeds screen boundary.
         if (y + menuHeight > windowHeight) {
@@ -191,7 +188,7 @@ export const Menu: React.FC<MenuProps> = ({
 
     // state.visible and state{x,y} are updated together
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.visible]);
+  }, [state.visible, state.showOptions]);
 
   // subscribe dom events
   useEffect(() => {
@@ -222,11 +219,17 @@ export const Menu: React.FC<MenuProps> = ({
     if (state.visible) {
       window.addEventListener('resize', hide);
       window.addEventListener('contextmenu', hide);
-      if (!touchMode) {
+
+      if (!state.showOptions || !state.showOptions.disableHideOnClick) {
         window.addEventListener('click', hide);
+      }
+      if (!state.showOptions || !state.showOptions.disableHideOnScroll) {
         window.addEventListener('scroll', hide);
+      }
+      if (!state.showOptions || !state.showOptions.disableKeyboardControl) {
         window.addEventListener('keydown', handleKeyboard);
       }
+
       // This let us debug the menu in the console in dev mode
       if (process.env.NODE_ENV !== 'development') {
         window.addEventListener('blur', hide);
@@ -236,20 +239,19 @@ export const Menu: React.FC<MenuProps> = ({
     return () => {
       window.removeEventListener('resize', hide);
       window.removeEventListener('contextmenu', hide);
-      if (!touchMode) {
-        window.removeEventListener('click', hide);
-        window.removeEventListener('scroll', hide);
-        window.removeEventListener('keydown', handleKeyboard);
-      }
+      window.removeEventListener('click', hide);
+      window.removeEventListener('scroll', hide);
+      window.removeEventListener('keydown', handleKeyboard);
+
       if (process.env.NODE_ENV !== 'development') {
         window.removeEventListener('blur', hide);
       }
     };
     // state.visible will let us get the right reference to `hide`
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.visible, menuController]);
+  }, [state.visible, state.showOptions, menuController]);
 
-  function show({ event, props, position }: ContextMenuParams) {
+  function show({ event, props, position, options }: ContextMenuParams) {
     event.stopPropagation();
     const { x, y } = position || getMousePosition(event);
 
@@ -263,6 +265,7 @@ export const Menu: React.FC<MenuProps> = ({
         y,
         triggerEvent: event,
         propsFromTrigger: props,
+        showOptions: options,
       });
     }, 0);
   }
