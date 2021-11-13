@@ -294,6 +294,13 @@ export const Menu: React.FC<MenuProps> = ({
     }
   }
 
+  function handleClick() {
+    // NOTE: Even show options disable hide when click on window, we should still hide context menu if click inside it.
+    if (state.showOptions && state.showOptions.disableHideOnClick) {
+      hide();
+    }
+  }
+
   function computeAnimationClasses() {
     if (!animation) return null;
 
@@ -338,6 +345,7 @@ export const Menu: React.FC<MenuProps> = ({
           {...rest}
           className={cssClasses}
           onAnimationEnd={handleAnimationEnd}
+          onClick={handleClick}
           style={menuStyle}
           ref={nodeRef}
           role="menu"
